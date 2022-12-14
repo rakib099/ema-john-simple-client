@@ -1,0 +1,10 @@
+.orders-container {
+    margin: 100px 0;
+    /* display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column; */
+}
+.text-center {
+    text-align: center;
+}
