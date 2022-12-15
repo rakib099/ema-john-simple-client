@@ -8,18 +8,30 @@ import './Shop.css';
 /* 
 count
 data per page (size) : 10  [up to the user] => useState
-pages : count / size
+pages : Math.ceil(count / size)
 currentPage (page)  [up to the user] => useState
-starting data = currentPage * size
+skip data = page * size
 */
 
 
 const Shop = () => {
-    const {products, count} = useLoaderData();
+    // const {products, count} = useLoaderData();
+    const [products, setProducts] = useState([]);
+    const [count, setCount] = useState(0);
     const [cart, setCart] = useState([]);
     const [page, setPage] = useState(0);
     const [size, setSize] = useState(10);
-    // console.log(totalPages)
+
+    useEffect(() => {
+        fetch(`http://localhost:5000/products?page=${page}&size=${size}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log(data);
+                setCount(data.count);
+                setProducts(data.products);
+            })
+            .catch(err => console.error(err));
+    }, [page, size]);
 
     const pages = Math.ceil(count / size);
 
@@ -33,15 +45,30 @@ const Shop = () => {
         // console.log('local storage first line', products);
         const storedCart = getStoredCart();
         const savedCart = [];
-        for (const id in storedCart) {
-            const addedProduct = products.find(product => product._id === id);
-            if (!!addedProduct) {
-                const quantity = storedCart[id];    // value of id property
-                addedProduct.quantity = quantity;
-                savedCart.push(addedProduct);
-            }
-        }
-        setCart(savedCart);
+        const ids = Object.keys(storedCart);
+        console.log(ids);
+        fetch('http://localhost:5000/productsByIds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(ids)
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data)
+                for (const id in storedCart) {
+                    const addedProduct = data.find(product => product._id === id);
+                    if (!!addedProduct) {
+                        const quantity = storedCart[id];    // value of id property
+                        addedProduct.quantity = quantity;
+                        savedCart.push(addedProduct);
+                    }
+                }
+                setCart(savedCart);
+            })
+            .catch(err => console.error(err));
+
         // console.log('local storage finished');
     }, [products]);
 
@@ -66,7 +93,6 @@ const Shop = () => {
     }
 
 
-
     return (
         <div className='shop-container'>
             <div className="products-container">
@@ -86,14 +112,23 @@ const Shop = () => {
                 </Cart>
             </div>
             <div className="pagination">
-                <p>Current page: {page}</p>
+                <p>Current page: {page}, size: {size}</p>
                 {
                     [...Array(pages).keys()].map(num => <button
-                    key={num}
-                    className={page === num ? "selected" : null}
-                    onClick={() => setPage(num)}
-                    >{num}</button> )
+                        key={num}
+                        className={page === num ? "selected" : ""}
+                        onClick={() => setPage(num)}
+                    >{num + 1}</button>)
                 }
+                <select onChange={(e) => {
+                    setSize(e.target.value)
+                    setPage(0);
+                }} defaultValue="10">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
             </div>
         </div>
     );
